@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Sequence
+from src.estimate_price import estimate_price
 import pandas as pd
 import sys
 import os
@@ -31,6 +32,20 @@ def csv_to_pairs(df: pd.DataFrame) -> Sequence[PriceMileagePair]:
     return pairs
 
 
+def train(pairs: Sequence[PriceMileagePair], learning_rate: float) -> tuple[float, float]:
+    pairs_len = len(pairs)
+    theta_0 = 0
+    theta_1 = 0
+    sum_errors_0 = 0
+    sum_errors_1 = 0
+    for pair in pairs:
+        predicted_price = estimate_price(pair.mileage, theta_0, theta_1)
+        error = predicted_price - pair.price 
+        sum_errors_0 += error 
+        sum_errors_1 += error * pair.mileage 
+    theta_0 -= learning_rate * (1 / pairs_len) * sum_errors_0
+    theta_1 -= learning_rate * (1 / pairs_len) * sum_errors_1
+    return (theta_0, theta_1)
 
 
 def main():
