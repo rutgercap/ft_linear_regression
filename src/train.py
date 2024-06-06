@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Sequence
-from src.estimate_price import estimate_price
+import numpy as np
 import pandas as pd
 import sys
 import os
@@ -8,8 +8,8 @@ import os
 
 @dataclass
 class PriceMileagePair:
-    price: int
     mileage: int
+    price: int
 
 
 def read_file(path_to_training_data: str) -> pd.DataFrame:
@@ -22,8 +22,14 @@ def read_file(path_to_training_data: str) -> pd.DataFrame:
 
 
 def csv_to_pairs(df: pd.DataFrame) -> Sequence[PriceMileagePair]:
+    if "km" not in df.columns or "price" not in df.columns:
+        print(
+            "Invalid file contents. Ensure that the file contains columns 'km' and 'price'."
+        )
+        exit(1)
+
     try:
-        pairs = [PriceMileagePair(row["price"], row["km"]) for _, row in df.iterrows()]
+        pairs = [PriceMileagePair(row["km"], row["price"]) for _, row in df.iterrows()]
     except KeyError:
         print(
             "Invalid file contents. Ensure that the file contains columns 'km' and 'price'."
@@ -32,20 +38,53 @@ def csv_to_pairs(df: pd.DataFrame) -> Sequence[PriceMileagePair]:
     return pairs
 
 
-def train(pairs: Sequence[PriceMileagePair], learning_rate: float) -> tuple[float, float]:
-    pairs_len = len(pairs)
+def gradient_descent(
+    pairs: Sequence[PriceMileagePair],
+    learning_rate: float = 0.0001,
+    epochs: int = 100000,
+) -> tuple[float, float]:
+    mileage = np.array([p.mileage for p in pairs], dtype=np.float64)
+    price = np.array([p.price for p in pairs], dtype=np.float64)
+
+    mileage_mean = mileage.mean()
+    mileage_std = mileage.std()
+    price_mean = price.mean()
+    price_std = price.std()
+
+    mileage = (mileage - mileage_mean) / mileage_std
+    price = (price - price_mean) / price_std
+
     theta_0 = 0
     theta_1 = 0
-    sum_errors_0 = 0
-    sum_errors_1 = 0
-    for pair in pairs:
-        predicted_price = estimate_price(pair.mileage, theta_0, theta_1)
-        error = predicted_price - pair.price 
-        sum_errors_0 += error 
-        sum_errors_1 += error * pair.mileage 
-    theta_0 -= learning_rate * (1 / pairs_len) * sum_errors_0
-    theta_1 -= learning_rate * (1 / pairs_len) * sum_errors_1
-    return (theta_0, theta_1)
+    m = len(pairs)
+
+    for iteration in range(epochs):
+        predictions = theta_0 * mileage + theta_1
+
+        errors = predictions - price
+
+        cost = (1 / (2 * m)) * np.sum(errors**2)
+
+        gradient_0 = (1 / m) * np.sum(errors * mileage)
+        gradient_1 = (1 / m) * np.sum(errors)
+
+        theta_0 -= learning_rate * gradient_0
+        theta_1 -= learning_rate * gradient_1
+
+        if iteration % 1000 == 0:
+            print(
+                f"Iteration {iteration}: Cost {cost}, theta_0 {theta_0}, theta_1 {theta_1}"
+            )
+
+    theta_0 = theta_0 * price_std / mileage_std
+    theta_1 = price_mean - (theta_0 * mileage_mean)
+
+    return theta_0, theta_1
+
+
+def train(pairs: Sequence[PriceMileagePair]) -> tuple[float, float]:
+    thetas = gradient_descent(pairs)
+    return thetas
 
 
 def main():
@@ -59,14 +98,15 @@ def main():
         exit(1)
     df = read_file(path_to_training_data)
     pairs = csv_to_pairs(df)
-
+    thetas = train(pairs)
     weights_dir = "weights"
     if not os.path.exists(weights_dir):
         os.makedirs(weights_dir)
     weights_file = os.path.join(weights_dir, "weights.txt")
     with open(weights_file, "w") as f:
-        f.write("theta0\n")
-        f.write("theta1\n")
+        f.write(f"{thetas[0]}\n")
+        f.write(f"{thetas[1]}\n")
+        print(f"Weights saved to {weights_file}")
 
 
 if __name__ == "__main__":

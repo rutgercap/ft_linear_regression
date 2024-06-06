@@ -1,4 +1,4 @@
-from src.train import PriceMileagePair, train
+from src.train import PriceMileagePair, train, dot_product
 
 
 def test_values_are_correct_for_consistent_price() -> None:

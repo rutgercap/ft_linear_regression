@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ft-linear-regression"
+name = "ft_linear_regression"
 version = "0.1.0"
 description = ""
 authors = ["Rutger Cappendijk <rutgercappendijk@gmail.com>"]
@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 pandas = "^2.2.2"
 pytest = "^8.2.1"
+matplotlib = "^3.9.0"
 
 
 [build-system]
