@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
 from typing import Sequence
 import numpy as np
 import pandas as pd
@@ -87,6 +88,32 @@ def train(pairs: Sequence[PriceMileagePair]) -> tuple[float, float]:
     return thetas
 
 
+def plot(pairs: Sequence[PriceMileagePair], thetas: tuple[float, float]) -> None:
+    mileage = np.array([p.mileage for p in pairs], dtype=np.float64)
+    price = np.array([p.price for p in pairs], dtype=np.float64)
+    theta_0, theta_1 = thetas
+    predictions = theta_0 * mileage + theta_1
+    plt.scatter(mileage, price, color='blue', label='Data points')
+    plt.plot(mileage, predictions, color='red', label='Linear regression')
+    plt.xlabel('Mileage')
+    plt.ylabel('Price')
+    plt.title('Linear Regression')
+    plt.legend()
+    plt.show()
+
+def r_squared(pairs: Sequence[PriceMileagePair], thetas: tuple[float, float]) -> float:
+    mileage = np.array([p.mileage for p in pairs], dtype=np.float64)
+    price = np.array([p.price for p in pairs], dtype=np.float64)
+    theta_0, theta_1 = thetas
+    predictions = theta_0 * mileage + theta_1
+    ss_total = np.sum((price - price.mean())**2)
+
+    ss_residual = np.sum((price - predictions)**2)
+
+    r_squared = 1 - (ss_residual / ss_total)
+    return r_squared
+
+
 def main():
     args = sys.argv[1:]
     if len(args) != 1:
@@ -107,6 +134,10 @@ def main():
         f.write(f"{thetas[0]}\n")
         f.write(f"{thetas[1]}\n")
         print(f"Weights saved to {weights_file}")
+        plot(pairs, thetas)
+        r_squared_value = r_squared(pairs, thetas)
+        print("R-squared value: ", r_squared_value)
+
 
 
 if __name__ == "__main__":

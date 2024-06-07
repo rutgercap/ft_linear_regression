@@ -13,8 +13,8 @@ def read_thetas(path: str) -> tuple[float, float]:
     return (theta_0, theta_1)
 
 
-def estimate_price(mileage: int, theta_0: float, theta_1: float) -> float:
-    return theta_0 * mileage + theta_1 
+def estimate_price(mileage: int, theta_0: float, theta_1: float) -> int:
+    return int(theta_0 * mileage + theta_1)
 
 
 def main() -> None:
